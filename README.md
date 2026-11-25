@@ -40,6 +40,36 @@ npm run dev
 
 Abrir `http://localhost:5173`.
 
+## Tests
+
+### Frontend (Vitest + Vue Test Utils)
+
+```bash
+cd Frontend
+npm test
+```
+
+Prueban los componentes en un navegador simulado (jsdom), reemplazando `fetch` y Chart.js por mocks:
+
+- `NuevaCompra.test.js`: carga de clientes, validaciones del formulario, cuerpo del POST y manejo de errores.
+- `NuevaVenta.test.js`: envío con `action: "sale"` y error por saldo insuficiente.
+- `GraficoCartera.test.js`: datos y colores del gráfico, tooltip con porcentaje, redibujado y limpieza.
+
+### Backend (xUnit)
+
+```bash
+cd Backend.Tests
+dotnet test
+```
+
+Usan una base de datos en memoria y un CriptoYa falso (precios fijos), así no dependen de SQL Server ni de internet:
+
+- `CryptoCodesTests`: unificación de códigos (`bitcoin` → `BTC`, etc.).
+- `SaldoServiceTests`: cálculo de saldo (compras − ventas).
+- `TransactionsControllerTests`: alta de compra/venta y sus validaciones, historial, PATCH, DELETE y análisis de cartera (incluye el ejemplo de la consigna).
+
+> Si la API está corriendo, detenela antes de `dotnet test` (Windows bloquea el `.exe`).
+
 ## Endpoints
 
 | Método | Ruta                                  | Descripción                                        |
