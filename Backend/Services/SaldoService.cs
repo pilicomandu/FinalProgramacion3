@@ -11,15 +11,19 @@ namespace TrabajoFinalProgramacion3.Services
             _context = context;
         }
 
+        /// <summary>
+        /// Calcula cuánto tiene un cliente de una cripto: suma las compras y resta las ventas.
+        /// </summary>
         public decimal ObtenerSaldo(int clientId, string cryptoCode)
         {
-            var cryptoUpper = cryptoCode.ToUpperInvariant();
+            var codigo = CryptoCodes.NormalizarOMantener(cryptoCode);
 
-
+            // Se traen las transacciones del cliente y se filtra en memoria por el
+            // código unificado, así "eth" y "ethereum" cuentan como la misma moneda.
             var transactions = _context.Transactions
                 .Where(t => t.ClientId == clientId)
                 .ToList()
-                .Where(t => string.Equals(t.CryptoCode, cryptoUpper, StringComparison.OrdinalIgnoreCase))
+                .Where(t => CryptoCodes.NormalizarOMantener(t.CryptoCode) == codigo)
                 .ToList();
 
             decimal saldo = 0;
