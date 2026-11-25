@@ -79,6 +79,8 @@
           </tr>
         </tfoot>
       </table>
+
+      <GraficoCartera :items="cartera.crypto" />
     </div>
 
     <div v-else-if="cartera && cartera.crypto && cartera.crypto.length === 0" style="text-align: center; padding: 40px; color: #666; background: #ffffff; border-radius: 8px;">
@@ -96,6 +98,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import GraficoCartera from '../components/GraficoCartera.vue'
 
 const router = useRouter()
 const clients = ref([])
