@@ -10,3 +10,5 @@ Thumbs.db
 Backend/.vs/
 Frontend/carrito-compras/
 .claude/
+Backend.Tests/bin/
+Backend.Tests/obj/
