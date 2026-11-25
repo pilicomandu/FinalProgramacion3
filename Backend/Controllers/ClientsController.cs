@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TrabajoFinalProgramacion3.Backend.Data;
-using TrabajoFinalProgramacion3.Backend.DTOs;
+using TrabajoFinalProgramacion3.Data;
+using TrabajoFinalProgramacion3.DTOs;
 using TrabajoFinalProgramacion3.Models;
 
 namespace TrabajoFinalProgramacion3.Controllers

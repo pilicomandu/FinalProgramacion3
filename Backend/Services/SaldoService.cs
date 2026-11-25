@@ -1,7 +1,6 @@
 ﻿using TrabajoFinalProgramacion3.Data;
-using TrabajoFinalProgramacion3.Models;
 
-namespace TrabajoFinalProgramacion3.Backend.Services
+namespace TrabajoFinalProgramacion3.Services
 {
     public class SaldoService
     {
@@ -14,22 +13,23 @@ namespace TrabajoFinalProgramacion3.Backend.Services
 
         public decimal ObtenerSaldo(int clientId, string cryptoCode)
         {
+            var cryptoUpper = cryptoCode.ToUpperInvariant();
+
+
             var transactions = _context.Transactions
-                .Where(t => t.ClientId == clientId && t.CryptoCode.ToLower() == cryptoCode.ToLower())
+                .Where(t => t.ClientId == clientId)
+                .ToList()
+                .Where(t => string.Equals(t.CryptoCode, cryptoUpper, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             decimal saldo = 0;
 
             foreach (var t in transactions)
             {
-                if (t.Action.ToLower() == "purchase")
-                {
+                if (string.Equals(t.Action, "purchase", StringComparison.OrdinalIgnoreCase))
                     saldo += t.CryptoAmount;
-                }
-                else if (t.Action.ToLower() == "sale")
-                {
+                else if (string.Equals(t.Action, "sale", StringComparison.OrdinalIgnoreCase))
                     saldo -= t.CryptoAmount;
-                }
             }
 
             return saldo;

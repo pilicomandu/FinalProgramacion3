@@ -1,4 +1,4 @@
- Backend/bin/
+Backend/bin/
 Backend/obj/
 Frontend/node_modules/
 Frontend/dist/
@@ -7,3 +7,6 @@ Frontend/dist/
 *.suo
 .DS_Store
 Thumbs.db
+Backend/.vs/
+Frontend/carrito-compras/
+.claude/

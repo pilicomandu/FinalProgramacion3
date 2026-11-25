@@ -30,6 +30,10 @@ async function guardarCompra() {
     alert("Debe seleccionar un cliente") 
     return 
   }
+  if (!dateTime.value) {
+    alert("Debe ingresar la fecha y hora")
+    return
+  }
 
   const transaction = { 
     cryptoCode: cryptoCode.value, 

@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Net.Http.Json;
 using System.Text.Json;
-using TrabajoFinalProgramacion3.Backend.Data;
 using TrabajoFinalProgramacion3.Backend.DTOs;
-using TrabajoFinalProgramacion3.Backend.Models;
+using TrabajoFinalProgramacion3.Data;
+using TrabajoFinalProgramacion3.DTOs;
 using TrabajoFinalProgramacion3.Models;
 using TrabajoFinalProgramacion3.Services;
 
@@ -22,12 +23,31 @@ namespace TrabajoFinalProgramacion3.Controllers
             _context = context;
             _httpClient = httpClient;
         }
+
         [HttpPost]
         public async Task<IActionResult> Create(CreateTransactionDTO transactionDTO)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            if (transactionDTO.CryptoAmount <= 0)
+            {
+                return BadRequest("La cantidad de criptomonedas debe ser mayor a 0.");
+            }
+
+            var accion = transactionDTO.Action.ToLower();
+            if (accion != "purchase" && accion != "sale")
+            {
+                return BadRequest("La acción debe ser 'purchase' (compra) o 'sale' (venta).");
+            }
+            transactionDTO.Action = accion;
+
+            var cryptosValidas = new[] { "btc", "eth", "usdc", "bitcoin", "ethereum" };
+            if (!cryptosValidas.Contains(transactionDTO.CryptoCode.ToLower()))
+            {
+                return BadRequest($"La criptomoneda '{transactionDTO.CryptoCode}' no es válida. Opciones: BTC, ETH, USDC.");
             }
 
             var clientExists = _context.Clients.Any(c => c.Id == transactionDTO.ClientId);
@@ -37,7 +57,7 @@ namespace TrabajoFinalProgramacion3.Controllers
                 return BadRequest("El cliente seleccionado no existe.");
             }
 
-            if (transactionDTO.Action.ToLower() == "sale")
+            if (string.Equals(transactionDTO.Action, "sale", StringComparison.OrdinalIgnoreCase))
             {
                 var saldoService = new SaldoService(_context);
                 var saldoActual = saldoService.ObtenerSaldo(
@@ -55,13 +75,13 @@ namespace TrabajoFinalProgramacion3.Controllers
             var crypto = transactionDTO.CryptoCode.ToUpper();
 
             var cryptoMap = new Dictionary<string, string>
-        {
-    { "bitcoin", "BTC" },
-    { "ethereum", "ETH" },
-    { "usdc", "USDC" },
-    { "btc", "BTC" },
-    { "eth", "ETH" }
-        };
+            {
+                { "bitcoin", "BTC" },
+                { "ethereum", "ETH" },
+                { "usdc", "USDC" },
+                { "btc", "BTC" },
+                { "eth", "ETH" }
+            };
 
             if (cryptoMap.ContainsKey(crypto.ToLower()))
             {
@@ -81,11 +101,9 @@ namespace TrabajoFinalProgramacion3.Controllers
             var response = await _httpClient.GetAsync(url);
             if (!response.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
-
                 return StatusCode(
-                (int)response.StatusCode,
-              $"Error al consultar CriptoYa. URL: {url} - Respuesta: {error}"
+                    StatusCodes.Status502BadGateway,
+                    $"No se pudo obtener el precio desde CriptoYa (código {(int)response.StatusCode})."
                 );
             }
 
@@ -97,7 +115,7 @@ namespace TrabajoFinalProgramacion3.Controllers
 
             decimal price;
 
-            if (transactionDTO.Action.ToLower() == "purchase")
+            if (string.Equals(transactionDTO.Action, "purchase", StringComparison.OrdinalIgnoreCase))
             {
                 price = priceData.Ask;
             }
@@ -123,7 +141,7 @@ namespace TrabajoFinalProgramacion3.Controllers
 
             return Ok(transaction);
         }
-       
+
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
@@ -136,7 +154,6 @@ namespace TrabajoFinalProgramacion3.Controllers
 
             _context.Transactions.Remove(transaction);
             _context.SaveChanges();
-
 
             return NoContent();
         }
@@ -221,11 +238,12 @@ namespace TrabajoFinalProgramacion3.Controllers
                     saldos[t.CryptoCode] = 0;
                 }
 
-                if (t.Action.ToLower() == "purchase")
+                if (string.Equals(t.Action, "purchase", StringComparison.OrdinalIgnoreCase))
                 {
                     saldos[t.CryptoCode] += t.CryptoAmount;
                 }
-                else if (t.Action.ToLower() == "sale")
+
+                else if (string.Equals(t.Action, "sale", StringComparison.OrdinalIgnoreCase))
                 {
                     saldos[t.CryptoCode] -= t.CryptoAmount;
                 }
@@ -260,8 +278,10 @@ namespace TrabajoFinalProgramacion3.Controllers
                     {
                         var priceData = await response.Content.ReadFromJsonAsync<CriptoPrice>();
                         if (priceData != null)
-                        {                  
-                            var precioActual = priceData.Ask;
+                        {
+                            // Se valúa la cartera al precio de venta (bid): es lo que
+                            // el cliente recibiría hoy si vendiera sus criptomonedas.
+                            var precioActual = priceData.Bid;
                             var valorTotal = saldo.Value * precioActual;
                             totalGeneral += valorTotal;
 

@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TrabajoFinalProgramacion3.Backend.Models;
+using TrabajoFinalProgramacion3.Models;
 
 namespace TrabajoFinalProgramacion3.Data
 {
