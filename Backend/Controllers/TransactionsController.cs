@@ -44,11 +44,13 @@ namespace TrabajoFinalProgramacion3.Controllers
             }
             transactionDTO.Action = accion;
 
-            var cryptosValidas = new[] { "btc", "eth", "usdc", "bitcoin", "ethereum" };
-            if (!cryptosValidas.Contains(transactionDTO.CryptoCode.ToLower()))
+            var crypto = CryptoCodes.Normalizar(transactionDTO.CryptoCode);
+            if (crypto == null)
             {
-                return BadRequest($"La criptomoneda '{transactionDTO.CryptoCode}' no es válida. Opciones: BTC, ETH, USDC.");
+                return BadRequest($"La criptomoneda '{transactionDTO.CryptoCode}' no es válida. Opciones: {string.Join(", ", CryptoCodes.Soportadas)}.");
             }
+            // Siempre se guarda con el código unificado (BTC, ETH, USDC)
+            transactionDTO.CryptoCode = crypto;
 
             var clientExists = _context.Clients.Any(c => c.Id == transactionDTO.ClientId);
 
@@ -70,22 +72,6 @@ namespace TrabajoFinalProgramacion3.Controllers
                     return BadRequest($"No se puede vender {transactionDTO.CryptoAmount} {transactionDTO.CryptoCode}. " +
                                      $"Saldo disponible: {saldoActual} {transactionDTO.CryptoCode}");
                 }
-            }
-
-            var crypto = transactionDTO.CryptoCode.ToUpper();
-
-            var cryptoMap = new Dictionary<string, string>
-            {
-                { "bitcoin", "BTC" },
-                { "ethereum", "ETH" },
-                { "usdc", "USDC" },
-                { "btc", "BTC" },
-                { "eth", "ETH" }
-            };
-
-            if (cryptoMap.ContainsKey(crypto.ToLower()))
-            {
-                crypto = cryptoMap[crypto.ToLower()];
             }
 
             var amountStr = transactionDTO.CryptoAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -194,7 +180,7 @@ namespace TrabajoFinalProgramacion3.Controllers
             }
 
             if (!string.IsNullOrEmpty(updateDTO.CryptoCode))
-                transaction.CryptoCode = updateDTO.CryptoCode;
+                transaction.CryptoCode = CryptoCodes.NormalizarOMantener(updateDTO.CryptoCode);
 
             if (!string.IsNullOrEmpty(updateDTO.Action))
                 transaction.Action = updateDTO.Action;
@@ -233,19 +219,21 @@ namespace TrabajoFinalProgramacion3.Controllers
 
             foreach (var t in transactions)
             {
-                if (!saldos.ContainsKey(t.CryptoCode))
+                // Agrupamos por código unificado: "eth" y "ethereum" suman en "ETH"
+                var codigo = CryptoCodes.NormalizarOMantener(t.CryptoCode);
+
+                if (!saldos.ContainsKey(codigo))
                 {
-                    saldos[t.CryptoCode] = 0;
+                    saldos[codigo] = 0;
                 }
 
                 if (string.Equals(t.Action, "purchase", StringComparison.OrdinalIgnoreCase))
                 {
-                    saldos[t.CryptoCode] += t.CryptoAmount;
+                    saldos[codigo] += t.CryptoAmount;
                 }
-
                 else if (string.Equals(t.Action, "sale", StringComparison.OrdinalIgnoreCase))
                 {
-                    saldos[t.CryptoCode] -= t.CryptoAmount;
+                    saldos[codigo] -= t.CryptoAmount;
                 }
             }
 
@@ -270,7 +258,7 @@ namespace TrabajoFinalProgramacion3.Controllers
             {
                 try
                 {
-                    var cryptoCode = saldo.Key.ToUpper();
+                    var cryptoCode = saldo.Key;
                     var url = $"https://criptoya.com/api/satoshitango/{cryptoCode}/ars/1";
 
                     var response = await _httpClient.GetAsync(url);
